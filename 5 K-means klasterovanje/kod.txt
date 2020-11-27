@@ -1,0 +1,136 @@
+
+# radi sa numerickim podacima !
+# verovatno je greska ovde jer kaze na kraju da komentarisemo po grupama zemalja
+# pa bi verovatno trebalo da ostavimo Country !
+# al' me mrzi da ispravljam i radim opet, zna se sustina
+
+dataSet <- read.csv("world-happiness-report-2016.csv",stringsAsFactors = F)
+str(dataSet)
+
+length(unique(dataSet$Region))
+length(unique(dataSet$Country))
+# izbacujemo naziv zemlje jer ima previse razl vrednosti
+
+dataSet$Country <- NULL
+#mozda region moze faktorska da bude
+dataSet$Region <- as.factor(dataSet$Region)
+summary(dataSet$Region)
+
+# intervali poverenja nam za ovu metodu nisu potrebni
+dataSet$Lower.Confidence.Interval <- NULL
+dataSet$Upper.Confidence.Interval <- NULL
+
+apply(X = dataSet, MARGIN = 2, FUN = function(x) length(which(x == "")))
+apply(X = dataSet, MARGIN = 2, FUN = function(x) length(which(x == "-")))
+apply(X = dataSet, MARGIN = 2, FUN = function(x) length(which(is.na(x))))      
+# Region ima prazan string te cemo ga zameniti sa NA vrednoscu
+# Freedom ima NA vrednost, pa cemo ga zameniti medijanom ili meanom
+
+dataSet$Region[dataSet$Region == ""] <- NA
+table(dataSet$Region)
+# menjamo NA vrednost sa Sub-Saharan Africa jer nje ima najvise
+dataSet$Region[is.na(dataSet$Region)] <- "Sub-Saharan Africa"
+
+# gledamo za Freedom
+shapiro.test(dataSet$Freedom)
+# nema normalnu raspodelu, menjamo medijanom
+median <- median(dataSet$Freedom, na.rm = T)
+dataSet$Freedom[is.na(dataSet$Freedom)] <- median
+
+# nakon sredjivanja, proveravamo outliere
+apply(dataSet[,-1], 2, FUN = function(x) length(boxplot.stats(x)$out))
+# Government.Trust i Dystopisa.Residual imaju 12 i 6 outliera
+
+# sortiramo za svaki, gledamo najmanju/najvecu vrednost kojom cemo da zamenimo outliere preko quantile funkcije
+sort(boxplot.stats(dataSet$Government.Trust)$out)
+quantile(dataSet$Government.Trust, probs = seq(from = 0.9, to = 1, by = 0.025))
+# menjamo sa manjim od najmanjeg outliera, ovde je 0.312396 manje od 0.332304
+newMax <- as.numeric(quantile(dataSet$Government.Trust, 0.925))
+newMax
+dataSet$Government.Trust[dataSet$Government.Trust > newMax] <- newMax
+boxplot(dataSet$Government.Trust, xlab = 'Goverment.Trust')
+
+boxplot(dataSet$Dystopia.Residual, xlab = 'Dystopia.Residual')
+sort(boxplot.stats(dataSet$Dystopia.Residual)$out)
+quantile(dataSet$Dystopia.Residual, probs = seq(from = 0, to = 0.1, by = 0.025))
+# ovde stavljamo prvi veci od donjeg najveceg
+newMin <- as.numeric(quantile(dataSet$Dystopia.Residual, 0.05))
+newMin
+dataSet$Dystopia.Residual[dataSet$Dystopia.Residual < newMin] <- newMin
+# ovo je bilo za donje outliere
+# sad za gornje
+sort(boxplot.stats(dataSet$Dystopia.Residual)$out)
+quantile(dataSet$Dystopia.Residual, probs = seq(from = 0.9, to = 1, by = 0.025))
+newMax2 <- as.numeric(quantile(dataSet$Dystopia.Residual, 0.975))
+newMax2
+dataSet$Dystopia.Residual[dataSet$Dystopia.Residual > newMax2] <- newMax2
+
+# normalizacija i model i elbow
+normalize.feature <- function( feature ) {
+  if ( sum(feature, na.rm = T) == 0 ) feature
+  else ((feature - min(feature, na.rm = T))/(max(feature, na.rm = T) - min(feature, na.rm = T)))
+}
+
+# normalizujemo numericke kolone
+data.norm1 <- as.data.frame(apply(dataSet[,c(3:10)], 2, normalize.feature))
+summary(data.norm1)
+
+# pravimo eval.metrics i k 2:8
+eval.metrics <- data.frame()
+
+for(k in 2:8){
+  set.seed(1010)
+  km.res <- kmeans(x = data.norm1,
+                    centers = k,
+                    iter.max = 20, 
+                    nstart = 1000)
+  eval.metrics <- rbind(eval.metrics, c(k, km.res$tot.withinss, km.res$betweenss/km.res$totss))
+}
+names(eval.metrics) <- c("clusters", "tot.withinss", "ratio")
+
+# trebalo bi da se nacrta kriva da se vidi gde je prelom
+# ali treba da se nauci
+# iz eval.metrics se vidi da je 3 najbolje k
+sample.3k <- kmeans(x = data.norm1,
+                 centers = 3,
+                 iter.max = 20, 
+                 nstart = 1000)
+sample.3k
+# 3 klastera od 56, 73 i 28 observacija
+# srednje vrednosti klastera
+# clustering vector: koja observacija pripada kom klasteru
+# suma kvadrata odstupanja observacija od centra klastera, sto manja to bolja jer je bliza centru klastera naravno
+# between_SS => odstupanje centra klastera od globalnog centra 
+# total_SS => svaka pojedinacna observacije od globalnog centra
+# sto je ratio veci, to je bolji, u nasem slucaju je 46.6%
+
+# dodajemo u normalizovanom u kom se klasteru nalazi koja varijabla
+data.norm1$cluster <- as.factor(sample.3k$cluster)
+data.norm1$cluster
+
+source("Utility.R")
+sum.stats <- summary.stats(dataSet[,c(3:10)], sample.3k$cluster, 3)
+sum.stats
+# broj u prvom zemalja u prvom klasteru je 56, broj u drugom je 73, broj u trecem je 28,
+# srednja vrednost Happiness.Score je 4.19, a odstupanje od centra 0.54 itd.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

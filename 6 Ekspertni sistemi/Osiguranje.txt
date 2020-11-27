@@ -1,0 +1,165 @@
+package com.sample;
+
+public class Osiguranje {
+	
+	private int snaga;
+	private int premijskiStepenPre;
+	private int brojNezgoda;
+	private boolean novAuto;
+	
+	private double osnovnaCena = 0;
+	private int premijskiStepenTek = 0;
+	private double konacnaCena = 0;
+	public int getSnaga() {
+		return snaga;
+	}
+	public void setSnaga(int snaga) {
+		this.snaga = snaga;
+	}
+	public int getPremijskiStepenPre() {
+		return premijskiStepenPre;
+	}
+	public void setPremijskiStepenPre(int premijskiStepenPre) {
+		this.premijskiStepenPre = premijskiStepenPre;
+	}
+	public int getBrojNezgoda() {
+		return brojNezgoda;
+	}
+	public void setBrojNezgoda(int brojNezgoda) {
+		this.brojNezgoda = brojNezgoda;
+	}
+	public boolean isNovAuto() {
+		return novAuto;
+	}
+	public void setNovAuto(boolean novAuto) {
+		this.novAuto = novAuto;
+	}
+	public double getOsnovnaCena() {
+		return osnovnaCena;
+	}
+	public void setOsnovnaCena(double osnovnaCena) {
+		this.osnovnaCena = osnovnaCena;
+	}
+	public int getPremijskiStepenTek() {
+		return premijskiStepenTek;
+	}
+	public void setPremijskiStepenTek(int premijskiStepenTek) {
+		this.premijskiStepenTek = premijskiStepenTek;
+	}
+	public double getKonacnaCena() {
+		return konacnaCena;
+	}
+	public void setKonacnaCena(double konacnaCena) {
+		this.konacnaCena = konacnaCena;
+	}
+	@Override
+	public String toString() {
+		return "AutoOsiguranje [osnovnaCena=" + osnovnaCena + ", premijskiStepenTek=" + premijskiStepenTek
+				+ ", konacnaCena=" + konacnaCena + "]";
+	}
+
+	
+}
+
+
+package com.sample
+ 
+import com.sample.Osiguranje;
+ 
+rule "1"
+    when
+        o : Osiguranje( snaga <= 40, osnovnaCena == 0)
+    then
+   
+       o.setOsnovnaCena(10000.00);
+       
+        update( o );
+end
+
+rule "2"
+    when
+        o : Osiguranje( snaga > 40, snaga <= 50, osnovnaCena == 0)
+    then
+   
+       o.setOsnovnaCena(11000);
+       
+        update( o );
+end
+
+rule "3"
+    when
+        o : Osiguranje( snaga > 50, snaga <= 75, osnovnaCena == 0)
+    then
+   
+       o.setOsnovnaCena(15000);
+       
+        update( o );
+end
+
+rule "4"
+    when
+        o : Osiguranje(snaga > 75, osnovnaCena == 0)
+    then
+   
+       o.setOsnovnaCena(25000);
+       
+        update( o );
+end
+
+rule "7"
+    when
+        o : Osiguranje( novAuto == true, premijskiStepenTek == 0)
+    then
+   
+       o.setPremijskiStepenTek(4);
+       
+        update( o );
+end
+
+rule "8"
+    when
+        o : Osiguranje( premijskiStepenPre > 0, brojNezgoda == 0, premijskiStepenTek == 0)
+    then
+   
+       o.setPremijskiStepenTek(o.getPremijskiStepenPre()-1);
+       
+        update( o );
+end
+
+rule "9"
+    when
+        o : Osiguranje( premijskiStepenPre > 0, brojNezgoda > 0, premijskiStepenTek == 0)
+    then
+   
+       o.setPremijskiStepenTek(o.getPremijskiStepenPre() + 3 * o.getBrojNezgoda());
+        update( o );
+end
+
+rule "9a"
+    when
+        o : Osiguranje(premijskiStepenTek > 12)
+    then
+   
+       o.setPremijskiStepenTek(12);
+        update( o );
+end
+
+rule "10"
+    when
+        o : Osiguranje( premijskiStepenTek <= 4, konacnaCena == 0)
+    then
+   
+       o.setKonacnaCena(o.getOsnovnaCena() * (0.8 + o.getPremijskiStepenTek()*0.05));
+       
+        update( o );
+end
+
+rule "11"
+    when
+        o : Osiguranje( premijskiStepenTek >= 5, konacnaCena == 0)
+    then
+   
+       o.setKonacnaCena(o.getOsnovnaCena() * (0.2 + o.getPremijskiStepenTek()*0.1));
+       
+        update( o );
+end

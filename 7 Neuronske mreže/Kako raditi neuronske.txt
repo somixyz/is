@@ -1,0 +1,7 @@
+1. implementiraj LearningEventListener
+2. Napises input i output count
+3. Pravis Trening klasu, i stavljas accuracy ili error u zavisnosti od zadatka
+4. Napravi listu treninga
+5. U mainu pokrenes run metodu
+6. Ako ima accuracy, pravis matricu konfuzije, a ako imas MSE onda ne
+7. Dalje ides po zadatku

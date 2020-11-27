@@ -1,0 +1,128 @@
+
+# SVE VARIJABLE ZA KNN MORAJU DA BUDU NUMERICKE !!!
+# NAKON SREDJIVANA TABELE MORAMO DA STANDARDIZUJEMO !
+# AKO JE p > 0.05 onda je normalna raspodela, ako je p < 0.05 onda nije !
+
+data <- read.csv("travel-times.csv")
+
+data$Date <- NULL
+data$StartTime <- NULL
+data$DayOfWeek <- NULL
+data$GoingTo <- NULL
+
+summary(data)
+apply(data, 2, FUN = function(x) length(which(is.na(x))))
+apply(data, 2, FUN = function(x) length(which(x == "")))
+apply(data, 2, FUN = function(x) length(which(x == "-")))
+
+# izbacili smo gornje varijable jer nam ne trebaju za nas model
+# mada pitaj na ispitu da li da pretvaras neke char u faktor pa u int/numeric i ostavis
+# Prazne stringove ima fuel economy i comments. comments nam treba za posle i necemo uklanjati NA vrednosti 
+
+str(data)
+data$GoingTo[data$GoingTo == ""] <- NA
+table(data$GoingTo)
+data$GoingTo[is.na(data$GoingTo)] <- "Work"
+data$GoingTo <- as.numeric(data$GoingTo)
+
+
+data$FuelEconomy[data$FuelEconomy == "" | data$FuelEconomy == "-"] <- NA
+class(data$FuelEconomy)
+data$FuelEconomy <- as.numeric(data$FuelEconomy)
+shapiro.test(data$FuelEconomy)
+medijanaFuelEco <- median(data$FuelEconomy, na.rm = TRUE)
+#nema normlanu raspodelu, pa NA menjam sa medijanom
+data$FuelEconomy[is.na(data$FuelEconomy)] <- medijanaFuelEco
+
+str(data)
+# 60ti percentil Congestion407
+# quantile ima u CHEATSHEETu
+percentil60 <- quantile(data$Congestion407, 0.6)
+data$Take407All <- ifelse(data$Congestion407 < percentil60 & data$Comments == "", yes = "Yes", no = "No")
+data$Congestion407 <- NULL
+data$Comments <- NULL
+str(data)
+data$Take407All <- factor(data$Take407All)
+
+# gledamo koliko ima outlajera
+apply(X = data[,1:7], 2, FUN = function(x) length(boxplot.stats(x)$out))
+# posto ima outlajera moramo standardizaciju
+apply(X = data[,1:7], 2, FUN = function(x) shapiro.test(x))
+# nijedna nema normalnu raspodelu
+
+# sve p vrednosti su manje od 0.05, pa je center = median(x) scale = IQR(x)
+# ako je neka veca od 0.05, odnosno ima normalnu raspodelu onda pisemo center = TRUE scale = TRUE
+# naravno izbaci kolone koje ne trebaju u odredjenoj funkciji
+data.std <- apply(X = data[,1:7], 2, FUN = function(x) scale(x, center = median(x), scale = IQR(x)))
+data.std <- as.data.frame(data.std)
+# sad dodamo Take407All jer je ona ta poslednja, factor varijabla
+data.std$Take407All <- as.factor(data$Take407All)
+
+# PRIMER KAD IMA I NEKIH SA NORMALNIM, SAMO DODAMO KOLONE NA OVAJ NACIN:
+# data.std$Kolona <- as.vector(scale(x, center = TRUE, scale = TRUE))
+
+str(data.std)
+
+# kad smo zavrsili sa standardizacijom, delimo na train i test
+library(caret)
+set.seed(1010)
+indexes <- createDataPartition(data.std$Take407All, p = 0.8, list = FALSE)
+train.data <- data.std[indexes, ]
+test.data <- data.std[-indexes, ]
+
+# krosvalidacija za 10 iteracija, kako je dato u zadatku
+# nacin za pronalazenje sto boljih vrednosti za parametre
+# za krosvalidaciju uvek e1071 !!!
+library(e1071)
+library(caret)
+numFolds = trainControl(method = "cv", number = 10) 
+kGrid = expand.grid(.k = seq(from = 3, to = 25, by = 2))
+# OBAVEZNO SET.SEED !!!
+set.seed(1010)
+knn.cv <- train(Take407All ~ . , 
+                data = train.data,
+                method = "knn", 
+                trControl = numFolds, tuneGrid = kGrid) 
+knn.cv
+plot(knn.cv)
+# najbolji value za knn je 23, tako smo dobili
+
+library(class)
+knn.pred <- knn(train = train.data[,-8], # training data without the output (class) variable
+                test = test.data[,-8], # test data without the output (class) variable
+                cl = train.data$Take407All, # output (class) variable is specified here
+                k = 23)
+
+getEvaluationMetrics <- function(cm){
+  
+  TP <- cm[2,2]
+  TN <- cm[1,1]
+  FP <- cm[1,2]
+  FN <- cm[2,1]
+  
+  accuracy <- sum(diag(cm)) / sum(cm)
+  precision <- TP / (TP + FP)
+  recall <- TP / (TP + FN)
+  F1 <- (2*precision*recall) / (precision + recall)
+  
+  c(Accuracy = accuracy, 
+    Precision = precision, 
+    Recall = recall, 
+    F1 = F1)
+  
+}
+
+knn.cm <- table(true = test.data$Take407All, predicted = knn.pred)
+knn.cm
+knn.eval <- getEvaluationMetrics(knn.cm)
+knn.eval
+
+# komentari za evaluacije
+
+
+
+
+
+
+
+

@@ -1,0 +1,22 @@
+
+Zadaci iz R-a:
+U svakom folderu imate sliku, csv fajl i kod sa objašnjenjem kako sam ja radio, 
+nigde nema ovako lepo sortirano, pa da vam bude lakše: 
+
+https://drive.google.com/drive/folders/1uHuoXIgf0_4IEve5l1_6_Q0fc4f3sCcc?usp=sharing
+
+Ko nije upućen niti krenuo da uči, nek uči ovako (prvi zadatak je R, drugi ekspertni sistemi/neuronske mreže):
+
+1.	Prođe Stefanove klipove za R i za Ekspertne sisteme: 
+	https://www.youtube.com/channel/UCNeyEk9ivTLEbr-q6Fl5f-g/playlists
+	(Ovim redom: Uvod, Drvo odlucivanja, KNN, Naive Bayes, Linearna regresija, Klasteri, Dodatak na sve zadatke, Ekspertni sistemi)
+
+2.	Prođe ove moje materijale, i vežba još nešto ako baš želi, ali to je u suštini to
+
+Bitne stvari za Ekspertne (ovo pogledajte kad budete prolazili klipove za ekspertne od Stefana jer njemu neke stvari ne rade upravo zbog ovoga): 
+
+1.	Izbacili su lock-on-active, ne radi lepo, pa nigde to ne pisite
+
+2.	Obavezno u mainu pišite System.out.println(<imeVaseKlase>) da bi vam se ispisalo
+
+3.	Ako vam se neka vrednost ispisuje kao null, u Klasi joj dajte default vrednost, a u sample dodajte u whenu ( tajParametar == defaultVrednost )
